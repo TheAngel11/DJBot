@@ -21,5 +21,4 @@ urlpatterns = [
     path('', index),
     path('djapp/', include('djapp.urls')),
     path('api/', include('api.urls')),
-    path('dialogApi/', include('dialogApi.urls')),
 ]

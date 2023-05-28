@@ -4,20 +4,41 @@ from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer
 from nltk.corpus import stopwords
 import random
+import uuid
 from djapp.models import Song, Genre
 from google.cloud import dialogflow_v2beta1 as dialogflow
+from google.protobuf.json_format import MessageToJson
 
 def index(request):
+    if 'uuid' not in request.session:
+        request.session['uuid'] = str(uuid.uuid4())
+
     return render(request, 'index.html')
 
 
 def get_message(request):
     # Get the message from the user
     message = request.GET.get('message')
-    # Process and return the response
-    response = chatbot(message)
 
-    return HttpResponse(response)
+    session_client = dialogflow.SessionsClient()
+
+    session_path = session_client.session_path("djbot-388016", str(uuid.uuid4()))
+
+    text_input = dialogflow.TextInput(text=message, language_code="en-US")
+
+    query_input = dialogflow.QueryInput(text=text_input)
+
+    response = session_client.detect_intent(session=session_path, query_input=query_input)
+
+    json_response = MessageToJson(response._pb)
+    print(json_response)
+
+    # TODO: Get intent and parameters from the response and execute API call to spotify
+
+    # Process and return the response
+    # response = chatbot(message)
+
+    return HttpResponse(response.query_result.fulfillment_text)
 
 
 genre = {"pop", "rock", "rap", "classic"}
