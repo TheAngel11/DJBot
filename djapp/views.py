@@ -4,6 +4,8 @@ from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer
 from nltk.corpus import stopwords
 import random
+from djapp.models import Song, Genre
+from google.cloud import dialogflow_v2beta1 as dialogflow
 
 def index(request):
     return render(request, 'index.html')
@@ -39,41 +41,7 @@ responses_song = ["You should listen to %s",
                   "You'll love the song %s, it is huge"]
 
 
-class Song:
-    def __init__(self, title, artist, genre):
-        self.title = title
-        self.artist = artist
-        self.genre = genre
 
-    def getGenre(self):
-        return self.genre.getName().lower()
-
-    def getTitle(self):
-        return self.title.lower()
-
-    def getArtist(self):
-        return self.artist.lower()
-
-    def getArtistInfo(self):
-        return self.artist
-
-    def getMood(self):
-        return self.genre.getMood().lower()
-
-    def getInfo(self):
-        return self.title + " by " + self.artist
-
-
-class Genre:
-    def __init__(self, name, mood):
-        self.name = name
-        self.mood = mood
-
-    def getName(self):
-        return self.name
-
-    def getMood(self):
-        return self.mood
 
 
 def generate_artist(songs):

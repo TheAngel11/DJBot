@@ -1,3 +1,5 @@
 Django==4.2.1
 django-environ==0.9.0
 nltk==3.8.1
+google-cloud-dialogflow
+dotenv==0.0.5

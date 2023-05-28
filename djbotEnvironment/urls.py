@@ -20,4 +20,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', index),
     path('djapp/', include('djapp.urls')),
+    path('api/', include('api.urls')),
+    path('dialogApi/', include('dialogApi.urls')),
 ]
