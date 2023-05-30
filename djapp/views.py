@@ -8,10 +8,14 @@ import uuid
 from djapp.models import Song, Genre
 from google.cloud import dialogflow_v2beta1 as dialogflow
 from google.protobuf.json_format import MessageToJson
+from api.views import search, get_songs_by_artist, get_genres_by_artist, get_albums_by_artist, get_access_token
 
 def index(request):
     if 'uuid' not in request.session:
         request.session['uuid'] = str(uuid.uuid4())
+
+    if 'access_token' not in request.session:
+        request.session['access_token'] = get_access_token()
 
     return render(request, 'index.html')
 
@@ -22,173 +26,197 @@ def get_message(request):
 
     session_client = dialogflow.SessionsClient()
 
-    session_path = session_client.session_path("djbot-388016", str(uuid.uuid4()))
+    session_path = session_client.session_path("djbot-388016", request.session['uuid'])
 
     text_input = dialogflow.TextInput(text=message, language_code="en-US")
 
     query_input = dialogflow.QueryInput(text=text_input)
 
-    response = session_client.detect_intent(session=session_path, query_input=query_input)
+    # Enable sentiment analysis
+    sentiment_config = dialogflow.SentimentAnalysisRequestConfig(
+        analyze_query_text_sentiment=True
+    )
+
+    # Set the query parameters with sentiment analysis
+    query_params = dialogflow.QueryParameters(
+        sentiment_analysis_request_config=sentiment_config
+    )
+
+    response = session_client.detect_intent(
+        request={
+            "session": session_path,
+            "query_input": query_input,
+            "query_params": query_params,
+        }
+    )
+
+    #response = session_client.detect_intent(session=session_path, query_input=query_input, query_params=query_params)
 
     json_response = MessageToJson(response._pb)
     print(json_response)
 
+    print(response.query_result.fulfillment_text)
+
     # TODO: Get intent and parameters from the response and execute API call to spotify
 
-    # Process and return the response
-    # response = chatbot(message)
+    answer = getAnswer(request, response)
 
-    return HttpResponse(response.query_result.fulfillment_text)
-
-
-genre = {"pop", "rock", "rap", "classic"}
-mood = {"happi", "angry", "sad", "calm"}
-
-responses_artist = ["%s is great!",
-                    "You can listen to %s",
-                    "I think you would like %s's songs",
-                    "%s is what you are looking for",
-                    "Haven't listened to %s yet? You'll love it",
-                    "The artist %s it is really great",
-                    "You'll love the artist %s, it is extraordinary"]
-
-responses_song = ["You should listen to %s",
-                  "I recommend you listen to %s",
-                  "I think you would like %s",
-                  "The song that suits better is %s",
-                  "%s is the song you are looking for",
-                  "The song %s it is the best choice for you",
-                  "You are looking for %s, it is really great",
-                  "You'll love the song %s, it is huge"]
+    return HttpResponse(answer)
 
 
+def getAnswer(request, response):
+    intent = response.query_result.intent.display_name
+    parameters = response.query_result.parameters
 
+    answer = ""
+    if intent == "music.get-song":
+        answer = getSongAnswer(request, parameters)
+    elif intent == "music.get-artist":
+        answer = getArtistAnswer(request, parameters)
+    elif intent == "music.get-playlist":
+        answer = "Sure, I'll find you a playlist"
+    elif intent == "music.get-album":
+        answer = "Sure, I'll find you an album"
+    else:
+        answer = response.query_result.fulfillment_text
 
+    return answer
 
-def generate_artist(songs):
-    artists = []
-    for word in songs:
-        artists.append(word.getArtist())
-    return artists
+def getSongAnswer(request, parameters):
+    buildQuery = ""
 
+    if parameters['music-artist'] != "":
+        buildQuery += parameters['music-artist']
+    if parameters['period'] != []:
+        buildQuery += " " + random.choice(parameters['period'])
+    if parameters['purpose'] != []:
+        buildQuery += " " + random.choice(parameters['purpose'])
+    if parameters['music-genre'] != "":
+        buildQuery += " " + parameters['music-genre']
+    if parameters['time'] != "":
+        buildQuery += " " + parameters['time']
+    if parameters['atribute'] != []:
+        buildQuery += " " + random.choice(parameters['atribute'])
+    if parameters['mood'] != []:
+        buildQuery += " " + random.choice(parameters['mood'])
 
-def filter_stop_words(sentence, stop_words):
-    filtered = []
-    for word in sentence:
-        if word not in stop_words:
-            filtered.append(word)
+    buildQuery += " songs"
+
+    result = search(request, 'track', buildQuery)
+    songs = []
+    randInt = random.randint(0, result['tracks']['limit'] - 1)
+    for i in range(randInt):
+        songs.append(result['tracks']['items'][i]['name'] + " by " + result['tracks']['items'][i]['artists'][0]['name'])
+    
+    # Build a pretty string with the songs
+    filtered = "I found these songs: \n"
+    for song in songs:
+        # Dot in UTF-8 is \u2022
+        filtered += "\u2022 " + song + "\n"
+
+    print(filtered)
     return filtered
 
+def getArtistAnswer(request, parameters):
+    buildQuery = ""
 
-def get_song_genre(genre, database):
-    songs_in_genre = [s for s in database if genre in s.getGenre()]
-    if songs_in_genre:
-        return random.choice(songs_in_genre)
-    else:
-        return None
+    if parameters['music-artist'] != "":
+        if parameters['atribute'] != []:
+            buildQuery += parameters['atribute'][0] + " to "
+        buildQuery += parameters['music-artist']
+    elif parameters['atribute'] != []:
+        buildQuery += " " + random.choice(parameters['atribute'])
+    if parameters['music-genre'] != "":
+        buildQuery += " " + parameters['music-genre']
+    if parameters['period'] != "":
+        buildQuery += " " + parameters['period']
+    if parameters['mood'] != "":
+        buildQuery += " " + parameters['mood']
 
+    buildQuery += " artists"
 
-def get_song_artist(artist, database):
-    songs_in_artist = [s for s in database if artist in s.getArtist()]
-    if songs_in_artist:
-        return random.choice(songs_in_artist)
-    else:
-        return None
+    result = search(request, 'artist', buildQuery)
+    
+    songs = []
+    randInt = random.randint(0, result['artists']['limit'] - 1)
+    for i in range(randInt):
+        songs.append(result['artists']['items'][i]['name'])
+    
+    # Build a pretty string with the songs
+    filtered = "I found these artists: \n"
+    for song in songs:
+        # Dot in UTF-8 is \u2022
+        filtered += "\u2022 " + song + "\n"
 
+    print(filtered)
 
-def song_by_mood(mood, database):
-    songs_in_mood = [s for s in database if mood in s.getMood()]
-    if songs_in_mood:
-        return random.choice(songs_in_mood)
-    else:
-        return None
+    return filtered
 
+def getAlbumAnswer(request, parameters):
+    buildQuery = ""
 
-def get_artist_from_artist(artist, database):
-    song_v1 = get_song_artist(artist, database)
-    songs_in_genre = [s for s in database if song_v1.getGenre() == s.getGenre()]
-    song = random.choice(songs_in_genre)
-    while (song.getArtist() == artist):
-        song = random.choice(songs_in_genre)
-    return song
+    if parameters['music-genre'] != []:
+        for genre in parameters['music-genre']:
+            buildQuery += genre + " "
+    if parameters['music-artist'] != "":
+        buildQuery += " " + parameters['music-artist']
+    if parameters['purpose'] != []:
+        buildQuery += " " + random.choice(parameters['purpose'])
+    if parameters['mood'] != "":
+        buildQuery += " " + parameters['mood']
 
-g1 = Genre("rap", "sad")  # Rap sad
-g2 = Genre("rock", "angry")  # Rock angry
-g3 = Genre("pop", "happi")  # Pop happy
-g4 = Genre("classic", "calm")  # Classic calm
+    buildQuery += " albums"
 
-s1 = Song("God's Plan", "Drake", g1)
-s2 = Song("Thunderstruck", "AC/DC", g2)
-s3 = Song("Lose Yourself", "Eminem", g1)
-s4 = Song("Bohemian Rhapsody", "Queen", g2)
-s5 = Song("Hey Jude", "Beatles", g2)
-s6 = Song("The Four Seasons", "Vivaldi", g4)
-s7 = Song("9th Symphony", "Beethoven", g4)
-s8 = Song("Für Elise", "Mozart", g4)
-s9 = Song("Dancing queen", "ABBA", g3)
-s10 = Song("Skyline", "Khalid", g3)
-s11 = Song("SAOKO", "Rosalía", g3)
-s12 = Song("Agua pasá", "SFDK", g1)
-s13 = Song("Don't Stop Believin'", "Journey", g2)
-s14 = Song("Umbrella", "Rihanna", g3)
-s15 = Song("Hotel California", "Eagles", g2)
-s16 = Song("Smells Like Teen Spirit", "Nirvana", g2)
+    result = search(request, 'album', buildQuery)
+    songs = []
+    randInt = random.randint(0, result['albums']['limit'] - 1)
+    for i in range(randInt):
+        songs.append(result['albums']['items'][i]['name'])
+    
+    # Build a pretty string with the songs
+    filtered = "I found these albums: \n"
+    for song in songs:
+        # Dot in UTF-8 is \u2022
+        filtered += "\u2022 " + song + "\n"
 
-S = [s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16]
+    print(filtered)
+    return filtered
 
-def chatbot(message):
-    database = S
-    artist_list = generate_artist(S)
+def getPlaylistAnswer(request, parameters):
+    buildQuery = ""
 
-    user_input = message
-    user_input_tokens = word_tokenize(user_input)
-    user_input_tokens = [PorterStemmer().stem(token) for token in user_input_tokens]
-    stop_words = stopwords.words('english')
-    filtered = filter_stop_words(user_input_tokens, stop_words)
-    # print(filtered)
+    if parameters['music-genre'] != []:
+        for genre in parameters['music-genre']:
+            buildQuery += genre + " "
+    if parameters['music-artist'] != "":
+        buildQuery += " " + parameters['music-artist']
+    if parameters['purpose'] != []:
+        buildQuery += " " + random.choice(parameters['purpose'])
+    if parameters['mood'] != []:
+        for mood in parameters['mood']:
+            buildQuery += " " + mood
+    if parameters['period'] != []:
+        for period in parameters['period']:
+            buildQuery += " " + period
+    if parameters['atribute'] != []:
+        for atribute in parameters['atribute']:
+            buildQuery += " " + atribute
+    if parameters['music-album'] != "":
+        buildQuery += " " + parameters['music-album']
 
-    if "bye" in filtered:
-        return "Goodbye! Have a nice day."
+    buildQuery += " playlists"
 
-    for word in filtered:
-        if word in genre:
-            song = get_song_genre(word, database)
-            if "song" in filtered:
-                sentence = random.choice(responses_song)
-                return sentence % song.getInfo()
-                break
-            elif "artist" in filtered:
-                sentence = random.choice(responses_artist)
-                return sentence % song.getArtistInfo()
-                break
-        if word in mood:
-            song = song_by_mood(word, database)
-            if "song" in filtered:
-                sentence = random.choice(responses_song)
-                return sentence % song.getInfo()
-                break
-            elif "artist" in filtered:
-                sentence = random.choice(responses_artist)
-                return sentence % song.getArtistInfo()
-                break
-        if word in artist_list:
-            if "song" in filtered:
-                song = get_song_artist(word, database)
-                sentence = random.choice(responses_song)
-                return sentence % song.getInfo()
-                break
-            elif "artist" in filtered:
-                song = get_artist_from_artist(word, database)
-                sentence = random.choice(responses_artist)
-                return sentence % song.getArtistInfo()
-                break
+    result = search(request, 'playlist', buildQuery)
+    songs = []
+    randInt = random.randint(0, result['playlists']['limit'] - 1)
+    for i in range(randInt):
+        songs.append(result['playlists']['items'][i]['name'])
+    
+    # Build a pretty string with the songs
+    filtered = "I found these playlists: \n"
+    for song in songs:
+        # Dot in UTF-8 is \u2022
+        filtered += "\u2022 " + song + "\n"
 
-
-    else:
-        return "I'm sorry, I didn't understand your question. Please try again."
-
-
-
-
-
-
+    print(filtered)
+    return filtered

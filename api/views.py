@@ -27,14 +27,19 @@ def get_access_token():
 
 HEADER = { 'Authorization': 'Bearer ' + get_access_token() }
 
-def search(type, query):
+def search(request, type, query):
     params = {
         'q': query,
         'type': type,
         'limit': 10
     }
 
-    response = get(env('BASE_URL') + '/search', headers=HEADER, params=params)
+    headers = { 'Authorization': 'Bearer ' + request.session['access_token'] }
+
+    print(headers)
+
+    response = get(env('BASE_URL') + '/search', headers=headers, params=params)
+    print(response.url)
 
     if response.status_code == 200:
         return response.json()
@@ -138,9 +143,9 @@ def index(request):
     #    print(song['name'])
 
     # for printing all the genres of an artist
-    #genres = get_genres_by_artist('Eminem')
-    #for genre in genres:
-    #    print(genre)
+    genres = get_genres_by_artist('Eminem')
+    for genre in genres:
+        print(genre)
 
 
     # for printing all the albums of an artist
