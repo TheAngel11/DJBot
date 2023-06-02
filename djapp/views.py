@@ -5,10 +5,15 @@ from nltk.stem import PorterStemmer
 from nltk.corpus import stopwords
 import random
 import uuid
+import json
 from djapp.models import Song, Genre
 from google.cloud import dialogflow_v2beta1 as dialogflow
 from google.protobuf.json_format import MessageToJson
 from api.views import search, get_songs_by_artist, get_genres_by_artist, get_albums_by_artist, get_access_token
+
+# Load the recomendations file
+with open('recomendations.json') as file:
+    data = json.load(file)
 
 def index(request):
     if 'uuid' not in request.session:
@@ -68,11 +73,15 @@ def getAnswer(request, response):
     intent = response.query_result.intent.display_name
     parameters = response.query_result.parameters
 
+    request.session['mood'] = parameters['mood']
+
     answer = ""
     if intent == "music.get-song":
-        answer = getSongAnswer(request, parameters)
+        song = getSongAnswer(request, parameters)
+        answer = random.choice(data['songs']).replace("<song>", song)
     elif intent == "music.get-artist":
-        answer = getArtistAnswer(request, parameters)
+        artist = getArtistAnswer(request, parameters)
+        answer = random.choice(data['artist']).replace("<artist>", artist)
     elif intent == "music.get-playlist":
         answer = "Sure, I'll find you a playlist"
     elif intent == "music.get-album":
@@ -99,6 +108,9 @@ def getSongAnswer(request, parameters):
         buildQuery += " " + random.choice(parameters['atribute'])
     if parameters['mood'] != []:
         buildQuery += " " + random.choice(parameters['mood'])
+    
+    if buildQuery == "":
+        buildQuery += request.session['mood']
 
     buildQuery += " songs"
 
@@ -115,7 +127,9 @@ def getSongAnswer(request, parameters):
         filtered += "\u2022 " + song + "\n"
 
     print(filtered)
-    return filtered
+
+    song = random.choice(songs)
+    return song
 
 def getArtistAnswer(request, parameters):
     buildQuery = ""
@@ -220,3 +234,5 @@ def getPlaylistAnswer(request, parameters):
 
     print(filtered)
     return filtered
+
+  
