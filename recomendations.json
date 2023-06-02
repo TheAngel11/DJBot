@@ -1,0 +1,39 @@
+{
+    "songs": [
+      "I recommend you check out <song>, it's really catchy!",
+      "I think you'll love <song>, give it a listen!",
+      "You should definitely give <song> a try, it's amazing!",
+      "<song> is a hidden gem, you should give it a listen!",
+      "I've got a great song recommendation for you, check <song> out!",
+      "You're in for a treat with <song>, it's fantastic!",
+      "You can't go wrong with <song>, it's a classic!",
+      "If you're looking for something new, try out <song>!",
+      "I've been obsessed with <song> lately, you should listen to it!",
+      "Trust me, <song> will make your day much better!",
+      "You should listen to <song>", 
+      "I recommend you listen to <song>", 
+      "I think you would like <song>", 
+      "The song that suits better is <song>", 
+      "<song> is the song you are looking for", 
+      "The song <song> it is the best choice for you",
+      "You are looking for <song>, it is really great", 
+      "You'll love the song <song>, it is huge"
+    ],
+    "artist":  [
+      "I recommend you check out <artist>, they're really good!",
+      "I think you'll love <artist>!",
+      "You should definitely give <artist> a try, they're amazing!",
+      "<artist> is a hidden gem, you should give them a listen!",
+      "I've got a great artist recommendation for you, check <artist> out!",
+      "You're in for a treat with <artist>, they're fantastic!",
+      "You can't go wrong with <artist>, they're a classic!",
+      "If you're looking for something new, try out <artist>!",
+      "<artist> is great!",
+      "You can listen to <artist>", 
+      "I think you would like <artist>'s songs", 
+      "<artist> is what you are looking for", 
+      "Haven't listened to <artist> yet? You'll love it",
+      "The artist <artist> it is really great",
+      "You'll love the artist <artist>, it is extraordinary"
+    ]
+  }
