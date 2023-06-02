@@ -11,16 +11,12 @@ from google.cloud import dialogflow_v2beta1 as dialogflow
 from google.protobuf.json_format import MessageToJson
 from api.views import search, get_songs_by_artist, get_genres_by_artist, get_albums_by_artist, get_access_token
 
-# Load the recomendations file
-with open('recomendations.json') as file:
-    data = json.load(file)
 
 def index(request):
     if 'uuid' not in request.session:
         request.session['uuid'] = str(uuid.uuid4())
 
-    if 'access_token' not in request.session:
-        request.session['access_token'] = get_access_token()
+    request.session['access_token'] = get_access_token()
 
     return render(request, 'index.html')
 
@@ -73,17 +69,23 @@ def getAnswer(request, response):
     intent = response.query_result.intent.display_name
     parameters = response.query_result.parameters
 
-    request.session['mood'] = parameters['mood']
+    #request.session['mood'] = parameters['mood']
 
     answer = ""
     if intent == "music.get-song":
         song = getSongAnswer(request, parameters)
-        answer = random.choice(data['songs']).replace("<song>", song)
+        with open('recomendations.json', 'r') as file:
+            data = json.load(file)
+        # Generate a random song recommendation
+        songs_response = data['songs']
+        answer = random.choice(songs_response).replace("<song>", "Hola")
+
     elif intent == "music.get-artist":
         artist = getArtistAnswer(request, parameters)
         answer = random.choice(data['artist']).replace("<artist>", artist)
+        
     elif intent == "music.get-playlist":
-        answer = "Sure, I'll find you a playlist"
+        answer = getPlaylistAnswer(request, parameters)
     elif intent == "music.get-album":
         answer = "Sure, I'll find you an album"
     else:
@@ -109,8 +111,8 @@ def getSongAnswer(request, parameters):
     if parameters['mood'] != []:
         buildQuery += " " + random.choice(parameters['mood'])
     
-    if buildQuery == "":
-        buildQuery += request.session['mood']
+    #if buildQuery == "":
+    #    buildQuery += request.session['mood']
 
     buildQuery += " songs"
 
