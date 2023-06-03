@@ -3,3 +3,4 @@ venv/
 api/__pycache__/*
 djapp/__pycache__/*
 app.yaml
+.env

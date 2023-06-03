@@ -1,8 +1,5 @@
 from django.shortcuts import render
 from django.http import HttpResponse
-from nltk.tokenize import word_tokenize
-from nltk.stem import PorterStemmer
-from nltk.corpus import stopwords
 import random
 import uuid
 import json
