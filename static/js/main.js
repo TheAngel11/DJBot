@@ -21,10 +21,13 @@ const STATE = {
 }
 
 fetchMessage = () => {
+    console.log("here 2");
     fetch(`/djapp/getmessage?message=${MESSAGE_INPUT_FIELD.value}`)
         .then(response => response.text())
         .then(data => {
+          console.log(data);
         window.MESSAGE = data;
+        sendChatbotMessage()
         });
 }
 
@@ -329,6 +332,7 @@ const sendChatbotMessage = () => {
 
 const sendUserMessage = () => {
   const text = MESSAGE_INPUT_FIELD.value
+  console.log(text)
   STATE.isUserSendingMessage = true
   addChatMessage(text, false)
   setTimeout(() => {
@@ -338,25 +342,40 @@ const sendUserMessage = () => {
 }
 
 const onEnterPress = e => {
-  fetchMessage()
+  /*fetchMessage()
   sendUserMessage()
   setTimeout(() => {
     sendChatbotMessage()
   }, 4000)
   toggleInput()
-  clearInputField()
+  clearInputField()*/
+
+  if(checkIfInputFieldHasVal()) {
+    removeClass(MESSAGE_INPUT, 'send-enabled')
+    if (canSendMessage()) {
+      fetchMessage()
+      sendUserMessage()
+      /*setTimeout(() => {
+        
+      }, 10000)*/
+      toggleInput()
+      clearInputField()
+    }
+  }
 }
 
 
 
 onSendClick = () => {
+  console.log("just clicked");
     if(checkIfInputFieldHasVal()) {
       removeClass(MESSAGE_INPUT, 'send-enabled')
       if (canSendMessage()) {
+        fetchMessage()
         sendUserMessage()
-        setTimeout(() => {
-          sendChatbotMessage()
-        }, 4000)
+        /*setTimeout(() => {
+          
+        }, 10000)*/
         toggleInput()
         clearInputField()
       }
