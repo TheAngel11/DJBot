@@ -82,12 +82,6 @@ def get_genres_by_artist(artist):
         return response.json()['genres']
     return None
 
-def get_albums_by_artist(artist):
-    artist_id = search('artist', artist)['artists']['items'][0]['id']
-    response = get(BASE_URL + '/artists/' + artist_id + '/albums', headers=HEADER)
-    if response.status_code == 200:
-        return response.json()    
-    return None
 
 def get_album_by_album(album):
     album_id = search('album', album)['albums']['items'][0]['id']
