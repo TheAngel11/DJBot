@@ -17,7 +17,6 @@ def index(request):
     if 'uuid' not in request.session:
         request.session['uuid'] = str(uuid.uuid4())
 
-    #if 'access_token' not in request.session:
     request.session['access_token'] = get_access_token()
 
     return render(request, 'index.html')
@@ -280,7 +279,6 @@ def getPlaylistAnswer(request, parameters):
     randInt = random.randint(0, randomMax - 1)
     playlist = result['playlists']['items'][randInt]['name']
     return generateSentence('playlist',playlist)
-
 
 def generate_random_numbers(paramters, max):
     if type(paramters) == str:
