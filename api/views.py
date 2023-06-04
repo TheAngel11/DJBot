@@ -1,6 +1,7 @@
 from django.shortcuts import render
 import environ
 import base64
+import random
 from requests import get, post
 
 env = environ.Env()
@@ -52,13 +53,24 @@ def get_songs_by_playlist(request, name):
     params = {
         'q': name,
         'type': 'playlist',
-        'limit': 1
+        'limit': 10
     }
 
     headers = { 'Authorization': 'Bearer ' + request.session['access_token'] }
 
     response = get(env('BASE_URL') + '/search', headers=headers, params=params)
-    id = response.json()['playlists']['items'][0]['id']
+
+    if response.status_code != 200:
+        return None
+    
+    data = response.json()
+    if data['playlists']['total'] == 0:
+        return None
+    elif data['playlists']['total'] <= data['playlists']['limit']:
+        id = data['playlists']['items'][random.randint(0,data['playlists']['total'])]['id']
+    else:
+        id = data['playlists']['items'][random.randint(0,data['playlists']['limit'])]['id']
+    
 
     response = get(env('BASE_URL') + '/playlists/' + id, headers=headers)
     print(response.url)
@@ -112,7 +124,17 @@ def get_genre_by_album(album):
     return None
 
 def get_artist_by_artist(request, artist):    
-    artist_id = search(request, 'artist', artist)['artists']['items'][0]['id']
+    data = search(request, 'artist', artist)
+    if data is None:
+        return None
+    
+    if data['artists']['total'] == 0:
+        return None
+    elif data['artists']['total'] <= data['artists']['limit']:
+        artist_id = data['artists']['items'][random.randint(0,data['artists']['total'])]['id']
+    else:
+        artist_id = data['artists']['items'][random.randint(0,data['artists']['limit'])]['id']
+    
     response = get(env('BASE_URL') + '/artists/' + artist_id + '/related-artists', headers={ 'Authorization': 'Bearer ' + request.session['access_token']})
     print(request.session['access_token'])
     print(response.url)

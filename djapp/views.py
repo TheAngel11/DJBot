@@ -91,16 +91,6 @@ def getAnswer(request, response):
 def getSongAnswer(request, parameters):
     buildQuery = ""
 
-    if parameters['music-artist'] != "":
-        buildQuery += "artist:" + parameters['music-artist'][0]
-    if parameters['period'] != []:
-        buildQuery += "year:" + random.choice(parameters['period'])
-    if parameters['purpose'] != []:
-        buildQuery += " " + random.choice(parameters['purpose'])
-    if parameters['music-genre'] != []:        
-        buildQuery += "genre:" + random.choice(parameters['music-genre'])
-    if parameters['time'] != "":
-        buildQuery += " " + parameters['time']
     if parameters['atribute'] != [] or parameters['mood'] != []:
         if parameters['atribute'] != []:
             buildQuery += " " + random.choice(parameters['atribute'])
@@ -113,34 +103,46 @@ def getSongAnswer(request, parameters):
         
         request.session['query'] = "mood:" + buildQuery
         return generateSentence('song', random.choice(aux))
-        #buildQuery += " " + random.choice(parameters['atribute'])
     
-    #check in memory previous query
-    if buildQuery == "":
-        if 'query' in request.session:
-            buildQuery = request.session['query']
-            if "mood:" in buildQuery:
-                mood = buildQuery.split(":")[1].strip()
-                aux = get_songs_by_playlist(request, mood)
-                return generateSentence('song', random.choice(aux))
+    else: 
+        if parameters['music-artist'] != "":
+            buildQuery += "artist:" + parameters['music-artist'][0]
+        if parameters['period'] != []:
+            buildQuery += "year:" + random.choice(parameters['period'])
+        if parameters['purpose'] != []:
+            buildQuery += " " + random.choice(parameters['purpose'])
+        if parameters['music-genre'] != []:        
+            buildQuery += "genre:" + random.choice(parameters['music-genre'])
+        if parameters['time'] != "":
+            buildQuery += " " + parameters['time']
+        
+        
+        #check in memory previous query
+        if buildQuery == "":
+            if 'query' in request.session:
+                buildQuery = request.session['query']
+                if "mood:" in buildQuery:
+                    mood = buildQuery.split(":")[1].strip()
+                    aux = get_songs_by_playlist(request, mood)
+                    return generateSentence('song', random.choice(aux))
+            else:
+                buildQuery += " songs"
+        
+        result = search(request, 'track', buildQuery)
+        #check if result is not empty
+        if result['tracks']['total'] == 0:
+            return "I don't know what song you want to listen to"
+        elif result['tracks']['total'] <= result['tracks']['limit']:
+            randomMax = result['tracks']['total'] - 1
         else:
-            buildQuery += " songs"
-    
-    result = search(request, 'track', buildQuery)
-    #check if result is not empty
-    if result['tracks']['total'] == 0:
-        return "I don't know what song you want to listen to"
-    elif result['tracks']['total'] <= result['tracks']['limit']:
-        randomMax = result['tracks']['total'] - 1
-    else:
-        randomMax = result['tracks']['limit'] - 1
-    
-    request.session['query'] = buildQuery
+            randomMax = result['tracks']['limit'] - 1
+        
+        request.session['query'] = buildQuery
 
-    randInt = random.randint(0,randomMax)
-    song = result['tracks']['items'][randInt]['name'] + " by " + result['tracks']['items'][randInt]['artists'][0]['name']
+        randInt = random.randint(0,randomMax)
+        song = result['tracks']['items'][randInt]['name'] + " by " + result['tracks']['items'][randInt]['artists'][0]['name']
 
-    return generateSentence('song', song)
+        return generateSentence('song', song)
 
 def getArtistAnswer(request, parameters):
     buildQuery = ""
