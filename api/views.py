@@ -36,6 +36,7 @@ def search(request, type, query):
     }
 
     headers = { 'Authorization': 'Bearer ' + request.session['access_token'] }
+    print(headers)
 
     
     response = get(BASE_URL + '/search', headers=headers, params=params)
@@ -123,20 +124,22 @@ def get_genre_by_album(album):
 # function to get the artist by another artist
 def get_artist_by_artist(request, artist):    
     data = search(request, 'artist', artist)
-    if data is None:
+    if data == None:
         return None
-
+    
     if data['artists']['total'] == 0:
         return None
-    elif data['artists']['total'] <= data['artists']['limit']:
-        artist_id = data['artists']['items'][random.randint(0,data['artists']['total']-1)]['id']
     else:
-        artist_id = data['artists']['items'][random.randint(0,data['artists']['limit']-1)]['id']
+        artist_id = data['artists']['items'][0]['id']
+    
+    headers = { 'Authorization': 'Bearer ' + request.session['access_token'] }
+    print(headers)
 
-    response = get(BASE_URL + '/artists/' + artist_id + '/related-artists', headers={ 'Authorization': 'Bearer ' + request.session['access_token']})
+    response = get(BASE_URL + '/artists/' + artist_id + '/related-artists', headers=headers)
     
     if response.status_code == 200:    
         result = response.json()
+        print(response.url)
         artists = []
 
         total = len(result['artists'])
