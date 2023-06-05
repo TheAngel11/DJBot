@@ -1,5 +1,6 @@
 from django.shortcuts import render
 import base64
+import random
 from requests import get, post
 import random
 from djbotEnvironment.settings import CLIENT_ID, CLIENT_SECRET, AUTH_URL, BASE_URL
