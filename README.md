@@ -2,25 +2,10 @@
 
 ## Requirements
 
-* Python 3
-* Standard libs
+* Web Browser
 
-## Instructions 
-
-cd <carpeta amb src code>
-python -m venv venv
-.\venv\Scripts\activate
-pip install -r requirements.txt
-python manage.py migrate
-
-python
->> import nltk
->> nltk.download('stopwords')
->> nltk.download('punkt')
->> quit()
-
-python manage.py runserver 
-
+## How to use
+Access to the following URL: https://djbot-388016.ew.r.appspot.com/
 
 ## Authors
 
